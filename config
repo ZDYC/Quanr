@@ -1,0 +1,2 @@
+FIREFOX_HEAD_SETTING_ = "lang=zh_CN.UTF-8"
+TIME_OUT = 50

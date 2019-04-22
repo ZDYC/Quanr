@@ -24,3 +24,4 @@ def clock(func):
         print('%s消耗%s秒' % (func, str(elapsed - t0)))
         return result
     return clocked
+
