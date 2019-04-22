@@ -28,7 +28,15 @@ class UrlManager(object):
             return {'err': 'url错误或已存在url集中'}
 
     def new_url_size(self):
+        """
+        返回待爬取url集合长度
+        :return:
+        """
         return len(self.new_urls)
 
     def old_url_size(self):
+        """
+        返回已爬取url集合长度
+        :return:
+        """
         return len(self.old_urls)

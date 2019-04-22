@@ -1,9 +1,11 @@
 # coding:utf-8
 #__author__ = 'YuQiangYONG'
 import requests
+from random import choice
 
 
 class Agent(object):
+
 	agents = [
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0; Baiduspider-ads) Gecko/17.0 Firefox/17.0",
         "Mozilla/5.0 (Linux; U; Android 2.3.6; en-us; Nexus S Build/GRK39F) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
@@ -75,8 +77,16 @@ class Agent(object):
         "Mozilla/5.0 (Linux; U; Android 1.6; es-es; SonyEricssonX10i Build/R1FA016) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
         "Mozilla/5.0 (Linux; U; Android 1.6; en-us; SonyEricssonX10i Build/R1AA056) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
     ]
+
+
 	def get_agent(self):
-		return random.choice(self.agents)
+        """
+        get a agent
+        :return:
+        """
+		return choice(self.agents)
+
 
 class HtmlDownloader(object):
-    pass
+        pass
+
