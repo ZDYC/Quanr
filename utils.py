@@ -6,11 +6,12 @@ import requests
 import json
 from random import choice
 from datetime import  datetime
+import hashlib
 
 
 #create logger
 logger_name = "Quanr"
-logger_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+logger_time = datetime.now().strftime("%Y-%m-%d")
 logger = logging.getLogger(logger_name)
 logger.setLevel(logging.DEBUG)
 logging.basicConfig(filename='Quanr%s.log' % logger_time, level=logging.INFO)
@@ -36,7 +37,7 @@ def get_ip():
     return a ip
     :return:
     """
-    ips=[
+    ips = [
         {"host": "1.196.158.160", "port": "23064", "country_cn": "中国", "province_cn": "河南", "city_cn": "南阳"},
         {"host": "171.12.165.221", "port": "35656", "country_cn": "中国", "province_cn": "河南", "city_cn": "漯河"},
         {"host": "116.209.142.178", "port": "24393", "country_cn": "中国", "province_cn": "湖北", "city_cn": "黄冈"},
@@ -46,7 +47,8 @@ def get_ip():
         {"host": "180.104.75.28", "port": "31842", "country_cn": "中国", "province_cn": "江苏", "city_cn": "徐州"},
         {"host": "42.59.98.12", "port": "40407", "country_cn": "中国", "province_cn": "辽宁", "city_cn": "鞍山"},
         {"host": "1.180.165.55", "port": "38476", "country_cn": "中国", "province_cn": "内蒙古", "city_cn": "乌兰察布"},
-        {"host": "60.189.195.10", "port": "35185", "country_cn": "中国", "province_cn": "浙江", "city_cn": "台州"}]
+        {"host": "60.189.195.10", "port": "35185", "country_cn": "中国", "province_cn": "浙江", "city_cn": "台州"}
+    ]
     url = 'https://api.getproxylist.com/proxy'
     res = requests.get(url)
     if res.status_code == 200:
@@ -87,3 +89,30 @@ def get_agent():
               "Mozilla/5.0 (Linux; U; Android 1.6; es-es; SonyEricssonX10i Build/R1FA016) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
               ]
     return choice(agents)
+
+
+def identityVCode():
+    timestamp = str(time.time())
+    h1 = hashlib.md5()
+    pid = '111403'
+    pdKey = 'yfTdTRekwQGcfq77uTxvOOsw3mQfUOVp'
+    pts = pdKey + timestamp
+    h1.update(pts.encode(encoding='utf8'))
+    ptpts = pid + timestamp + h1.hexdigets()
+
+    h2 = hashlib.md5()
+    h2.update(ptpts.encode(encoding='utf8'))
+    print(h2.hexdigets())
+
+    # str1 = pdKey + time.time()
+    # sign = md5(pd_id + timestamp + md5(timestamp + pd_key))
+    #
+    # url = 'http://pred.fateadm.com/api/capreg'
+    # data = {
+    #     "user_id": "111403",
+    #     "timestamp": str(time.time()),
+    #     "sign": "",
+    #     "predict_type": "",
+    #     "up_type": "",
+    #     "img_data": ""
+    # }

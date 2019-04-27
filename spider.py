@@ -4,11 +4,12 @@
 
 # from config import FIREFOX_HEAD_SETTING
 import logging
-import utils
+from utils import get_ip, get_agent
+import config
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import  WebDriverWait
-from selenium.webdriver.support import  expected_conditions as EC
+from selenium.webdriver.support import  expected_conditions as ECpipenv
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -16,10 +17,6 @@ from selenium.webdriver import ActionChains
 from lxml import etree
 import time
 import csv
-
-
-FIREFOX_HEAD_SETTING = "lang=zh_CN.UTF-8" # 火狐浏览器头部设置
-TIME_OUT = 50 # selenium超时50s
 
 
 class Spider(object):
@@ -36,16 +33,16 @@ class Spider(object):
         :return:
         """
         self.options = webdriver.FirefoxOptions()
-        self.options.add_argument(FIREFOX_HEAD_SETTING)
-        self.options.add_argument(str(utils.get_agent()))
+        self.options.add_argument(config.FIREFOX_HEAD_SETTING)
+        self.options.add_argument(str(get_agent()))
 
     def set_proxy(self):
         """
         设置ip代理
         :return:
         """
-        self.ip = utils.get_ip()['ip']
-        self.port = utils.get_ip()['port']
+        self.ip = get_ip()['ip']
+        self.port = get_ip()['port']
         self.profile = webdriver.FirefoxProfile()
         self.profile.set_preference("network.proxy.type", 1)
         self.profile.set_preference('network.proxy.http', str(self.ip))
@@ -72,11 +69,11 @@ class Spider(object):
                                         # firefox_profile=self.profile,
                                         )
         self.driver.set_window_size(960, 960)
-        self.driver.set_page_load_timeout(TIME_OUT)
+        self.driver.set_page_load_timeout(config.TIME_OUT)
         self.driver.get(self.url)
-        time.sleep(1)
-        self.driver.find_element_by_class_name("port-toggler").click() #二维码登陆转为账号密码登陆
-        time.sleep(0.6)
+        self.driver.implicitly_wait(config.SMALL_WAIT)
+        self.driver.find_element_by_class_name(config.PORT_TOGGLER).click() #二维码登陆转为账号密码登陆
+        self.driver.implicitly_wait(config.SMALL_WAIT)
         self.usernamePasswordLogin()
         # self.cookiesLogin()
 
@@ -85,23 +82,27 @@ class Spider(object):
         自动输入账号密码 手动输入验证码
         :return:
         """
-        self.driver.find_element_by_name("username").send_keys(self.username)
-        time.sleep(0.5)
-        self.driver.find_element_by_name("password").send_keys(self.password)
+        self.driver.find_element_by_name(config.USERNAME).send_keys(self.username)
+        self.driver.implicitly_wait(config.SMALL_WAIT)
+        self.driver.find_element_by_name(config.PASSWORD).send_keys(self.password)
+        self.driver.save_screenshot('quanr.png')
         vCode = input("输入验证码")
-        self.driver.find_element_by_name("vcode").send_keys(vCode)
-        time.sleep(0.2)
-        self.driver.find_element_by_id("submit").click()
-        # a = self.driver.find_element_by_id("errmsg")
-        # if self.driver.find_element_by_id("errmsg").text == "图形验证码错误":
+
+        self.driver.find_element_by_name(config.VCODE).send_keys(vCode)
+        self.driver.implicitly_wait(config.SMALL_WAIT)
+        self.driver.find_element_by_id(config.SUBMIT).click()
+
+        self.driver.implicitly_wait(config.SUPER_WAIT)
+        a = self.driver.find_element_by_id("errmsg")
+        print(a.id, a.text, a.size)
         #     self.driver.find_element_by_name("vcode").clear()
         #     vCode = input("验证码错误，请重新输入;")
         #     self.driver.find_element_by_name("vcode").send_keys(vCode)
         #     self.driver.find_element_by_id("submit").click()
 
-        self.driver.implicitly_wait(5)
-        self.driver.find_element_by_class_name("qhf_hotel").click() #跳转到酒店页面
-        time.sleep(2)
+        self.driver.implicitly_wait(config.SUPER_WAIT)
+        self.driver.find_element_by_class_name(config.QHF_HOTEL).click() #跳转到酒店页面
+        self.driver.implicitly_wait(config.SMALL_WAIT)
         self.findElement()
 
     def cookiesLogin(self):
@@ -162,7 +163,7 @@ class Spider(object):
             self.ele_fromDate = self.driver.find_element_by_id("fromDate") # 到店日期
             self.ele_toDate = self.driver.find_element_by_id("toDate") # 离店日期
         except Exception as e:
-            print(e)
+            logging.ERROR(e)
         else:
             self.sendCity_clickSearch()
     #
@@ -172,22 +173,24 @@ class Spider(object):
         :return:
         """
         self.ele_toCity.clear()
-        time.sleep(1.5) # 停留2s,否则容易被检测到
+        self.driver.implicitly_wait(config.MID_WAIT) # 停留2s,否则容易被检测到
         self.ele_toCity.send_keys(self.toCity)
-        time.sleep(7)
-        # ActionChains(self.driver).move_to_element(self.ele_toDate)
-        # time.sleep(1.5)
-        # self.driver.execute_script("arguments[0].click();", self.ele_search)
+        self.driver.implicitly_wait(config.MID_WAIT)
+        ActionChains(self.driver).send_keys(Keys.ENTER).perform() #用于躲避输入城市的自动提示导致selenium焦点异常
+        self.driver.implicitly_wait(config.MID_WAIT)
         self.ele_search.click()
+        self.driver.implicitly_wait(config.SUPER_WAIT)
+        self.jsWindowScrollTo()
 
     def jsWindowScrollTo(self):
         """
         网页拉到底
         :return:
         """
-        js = "window.srrollTo(0,document.body.scrollHeight);"
+        js = "window.scrollTo(0,document.body.scrollHeight);"
         self.driver.execute_script(js)
-        self.driver.implicitly_wait(4)
+        self.driver.implicitly_wait(config.SUPER_WAIT)
+        self.html_parse()
 
     def html_parse(self):
         self.rows = []
@@ -217,7 +220,7 @@ if __name__ == '__main__':
     spider = Spider(url= login_url,
                     username='332976499@qq.com',
                     password='fsm19950923',
-                    toCity="广州",
+                    toCity="长沙",
                     )
     spider.start()
 
