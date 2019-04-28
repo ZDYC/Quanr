@@ -1,4 +1,4 @@
-FIREFOX_HEAD_SETTING = "lang=zh_CN.UTF-8" # 火狐浏览器头部设置
+CHROME_HEAD_SETTING = "lang=zh_CN.UTF-8" # 火狐浏览器头部设置
 TIME_OUT = 50
 SMALL_WAIT = 0.5
 MID_WAIT = 1

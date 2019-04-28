@@ -12,4 +12,4 @@ class HtmlParser(object):
             price = each_div.xpath(".//*[@class='item_price js_hasprice']/a/b/text()")[0] #最低价
             s_pro  = each_div.xpath(".//*[@class='level levelmargin']/a/strong/text()") #评分
             commit = each_div.xpath(".//*[@class='level levelmargin']/a/text()") #评论
-            add_pro = each_div.xpath(".//*[@class='area_contair']/a/span/text()")   
+            add_pro = each_div.xpath(".//*[@class='area_contair']/a/span/text()")

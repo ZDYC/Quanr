@@ -1,10 +1,10 @@
 # coding:utf-8
-#__author__ = 'YuQiangYONG'
+#__author__ = 'Zdyc'
 
 
-# from config import FIREFOX_HEAD_SETTING
 import logging
-from utils import get_ip, get_agent
+from Utils.LogHandler import LogHandler
+from Utils.SetArguments import SetArguments
 import config
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -21,61 +21,41 @@ import csv
 
 class Spider(object):
 
-    def __init__(self, url, username, password,  toCity):
+    def __init__(self, url, username, password, toCity):
         self.url = url
         self.username = username
         self.password = password
         self.toCity = toCity
-
-    def set_argument(self):
-        """
-        设置浏览器头部
-        :return:
-        """
-        self.options = webdriver.FirefoxOptions()
-        self.options.add_argument(config.FIREFOX_HEAD_SETTING)
-        self.options.add_argument(str(get_agent()))
-
-    def set_proxy(self):
-        """
-        设置ip代理
-        :return:
-        """
-        self.ip = get_ip()['ip']
-        self.port = get_ip()['port']
-        self.profile = webdriver.FirefoxProfile()
-        self.profile.set_preference("network.proxy.type", 1)
-        self.profile.set_preference('network.proxy.http', str(self.ip))
-        self.profile.set_preference("network.proxy.http_port", str(self.port))
-        self.profile.update_preferences()
-
-        self.options.add_argument("--proxy-server=http://" + str(self.ip) + ':' + str(self.port))
-
-        self.proxy = Proxy({
-            'proxyType': ProxyType.MANUAL,
-            'httpProxy': str(self.ip) + ':' + str(self.port)
-        })
-        dc = DesiredCapabilities.PHANTOMJS.copy()
-        self.proxy.add_to_capabilities(dc)
-        self.driver = webdriver.PhantomJS(desired_capabilities=dc)
+        self.setArguments = SetArguments()
+        self.log = LogHandler('spider', file=False)
 
     def start(self):
-        self.login()
-
-    def login(self):
-        self.set_argument()
-        # self.set_proxy()
-        self.driver = webdriver.Firefox(firefox_options=self.options,
-                                        # firefox_profile=self.profile,
-                                        )
-        self.driver.set_window_size(960, 960)
+        self.set_arguments()
+        self.driver = webdriver.Chrome(chrome_options=self.options)
+        # self.driver.set_window_size(940, 500)
         self.driver.set_page_load_timeout(config.TIME_OUT)
         self.driver.get(self.url)
-        self.driver.implicitly_wait(config.SMALL_WAIT)
+        self.driver.implicitly_wait(config.SUPER_WAIT)
         self.driver.find_element_by_class_name(config.PORT_TOGGLER).click() #二维码登陆转为账号密码登陆
         self.driver.implicitly_wait(config.SMALL_WAIT)
         self.usernamePasswordLogin()
         # self.cookiesLogin()
+
+    def set_arguments(self):
+        """
+        设置浏览器头部及代理ip
+        :return:
+        """
+        self.ipAndPort = self.setArguments.getIp()
+        self.agent = self.setArguments.getAgent()
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument(config.CHROME_HEAD_SETTING)
+        self.options.add_argument(str(self.agent))
+        self.options.add_argument("--proxy-server=http://47.99.113.175:8118")
+        # if self.ipAndPort:
+        #     self.options.add_argument("--proxy-server=http://" + self.ipAndPort)
+        #     print(self.ipAndPort, self.agent)
+            # self.log.info('user-agent %s---ipAndPort: %s' % (self.agent, self.ipAndPort))
 
     def usernamePasswordLogin(self):
         """
@@ -94,7 +74,6 @@ class Spider(object):
 
         self.driver.implicitly_wait(config.SUPER_WAIT)
         a = self.driver.find_element_by_id("errmsg")
-        print(a.id, a.text, a.size)
         #     self.driver.find_element_by_name("vcode").clear()
         #     vCode = input("验证码错误，请重新输入;")
         #     self.driver.find_element_by_name("vcode").send_keys(vCode)
@@ -176,7 +155,8 @@ class Spider(object):
         self.driver.implicitly_wait(config.MID_WAIT) # 停留2s,否则容易被检测到
         self.ele_toCity.send_keys(self.toCity)
         self.driver.implicitly_wait(config.MID_WAIT)
-        ActionChains(self.driver).send_keys(Keys.ENTER).perform() #用于躲避输入城市的自动提示导致selenium焦点异常
+        # ActionChains(self.driver).send_keys(Keys.ENTER).perform() #用于躲避输入城市的自动提示导致selenium焦点异常
+        self.ele_toCity.submit() #用于躲避输入城市的自动提示导致selenium焦点异常
         self.driver.implicitly_wait(config.MID_WAIT)
         self.ele_search.click()
         self.driver.implicitly_wait(config.SUPER_WAIT)
@@ -216,11 +196,10 @@ class Spider(object):
 
 
 if __name__ == '__main__':
-    login_url = 'https://user.qunar.com/passport/login.jsp?ret=https%3A%2F%2Fwww.qunar.com%2F'
-    spider = Spider(url= login_url,
+    spider = Spider(url= 'https://user.qunar.com/passport/login.jsp?ret=https%3A%2F%2Fwww.qunar.com%2F',
                     username='332976499@qq.com',
                     password='fsm19950923',
-                    toCity="长沙",
+                    toCity="广州",
                     )
     spider.start()
 
