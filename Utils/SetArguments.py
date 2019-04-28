@@ -54,6 +54,16 @@ class SetArguments(object):
         ]
         return random.choice(agents)
 
+    def getUsernamePassword(self):
+        """
+        随机返回一组账号密码
+        :return:
+        """
+        self.info = [{'username': '332976499@qq.com', 'password': '19950923fsm'},
+                    {'username': '19926052464@163.com', 'password': 'fsm19950923'},
+                    {'username': '3390807874@qq.com', 'password': 'fsm19950923'}]
+        return random.choice(self.info)
+
     def identityVCode(self):
         """
         识别验证码
