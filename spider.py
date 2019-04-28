@@ -17,14 +17,13 @@ from selenium.webdriver import ActionChains
 from lxml import etree
 import time
 import csv
+import re
 
 
 class Spider(object):
 
-    def __init__(self, url, username, password, toCity):
+    def __init__(self, url, toCity):
         self.url = url
-        self.username = username
-        self.password = password
         self.toCity = toCity
         self.setArguments = SetArguments()
         self.log = LogHandler('spider', file=False)
@@ -32,10 +31,11 @@ class Spider(object):
     def start(self):
         self.set_arguments()
         self.driver = webdriver.Chrome(chrome_options=self.options)
-        # self.driver.set_window_size(940, 500)
+        self.driver.set_window_size(950, 500)
         self.driver.set_page_load_timeout(config.TIME_OUT)
         self.driver.get(self.url)
         self.driver.implicitly_wait(config.SUPER_WAIT)
+        # self.driver.execute_script("document.body.style.zoom='0.7'") #缩放浏览器字大小
         self.driver.find_element_by_class_name(config.PORT_TOGGLER).click() #二维码登陆转为账号密码登陆
         self.driver.implicitly_wait(config.SMALL_WAIT)
         self.usernamePasswordLogin()
@@ -52,6 +52,7 @@ class Spider(object):
         self.options.add_argument(config.CHROME_HEAD_SETTING)
         self.options.add_argument(str(self.agent))
         self.options.add_argument("--proxy-server=http://47.99.113.175:8118")
+        self.options.add_experimental_option('excludeSwitches', ['enable-automation']) #这是一句很厉害的代码
         # if self.ipAndPort:
         #     self.options.add_argument("--proxy-server=http://" + self.ipAndPort)
         #     print(self.ipAndPort, self.agent)
@@ -62,9 +63,10 @@ class Spider(object):
         自动输入账号密码 手动输入验证码
         :return:
         """
-        self.driver.find_element_by_name(config.USERNAME).send_keys(self.username)
+        self.info = self.setArguments.getUsernamePassword()
+        self.driver.find_element_by_name(config.USERNAME).send_keys(self.info['username'])
         self.driver.implicitly_wait(config.SMALL_WAIT)
-        self.driver.find_element_by_name(config.PASSWORD).send_keys(self.password)
+        self.driver.find_element_by_name(config.PASSWORD).send_keys(self.info['password'])
         self.driver.save_screenshot('quanr.png')
         vCode = input("输入验证码")
 
@@ -142,7 +144,8 @@ class Spider(object):
             self.ele_fromDate = self.driver.find_element_by_id("fromDate") # 到店日期
             self.ele_toDate = self.driver.find_element_by_id("toDate") # 离店日期
         except Exception as e:
-            logging.ERROR(e)
+            # logging.ERROR(e)
+            print(e)
         else:
             self.sendCity_clickSearch()
     #
@@ -152,13 +155,15 @@ class Spider(object):
         :return:
         """
         self.ele_toCity.clear()
-        self.driver.implicitly_wait(config.MID_WAIT) # 停留2s,否则容易被检测到
+        self.driver.implicitly_wait(config.MID_WAIT)
+        time.sleep(2)
         self.ele_toCity.send_keys(self.toCity)
+        time.sleep(1.5)
         self.driver.implicitly_wait(config.MID_WAIT)
         # ActionChains(self.driver).send_keys(Keys.ENTER).perform() #用于躲避输入城市的自动提示导致selenium焦点异常
         self.ele_toCity.submit() #用于躲避输入城市的自动提示导致selenium焦点异常
         self.driver.implicitly_wait(config.MID_WAIT)
-        self.ele_search.click()
+        # self.ele_search.click()
         self.driver.implicitly_wait(config.SUPER_WAIT)
         self.jsWindowScrollTo()
 
@@ -174,31 +179,58 @@ class Spider(object):
 
     def html_parse(self):
         self.rows = []
-        html = etree.HTML(str(self.driver.page_source()))
+        html = etree.HTML(str(self.driver.page_source))
         div = html.xpath(".//*[@class='item_hotel_info']")
         for each_div in div:
-            name = each_div.xpath(".//*[@class='hotel_item']/a/text()")
-            price = each_div.xpath(".//*[@class='item_price js_hasprice']/a/b/text()")
-            socre = each_div.xpath(".//*[@class='level levelmargin']/a/strong/text()")
-            commit = each_div.xpath(".//[@class='level levelmargin']/a/text()")
-            recommand = each_div.xpath(".//*[@class='level levelmargin']/a/span/text()")
-            address = each_div.xpath(".//[@class='area_contair']/a/span/text()")
-            result = (name, address, socre, recommand, commit, price)
-            self.rows.append(result)
+            try:
+                name = each_div.xpath(".//*[@class='hotel_item']/a/text()")[0]
+                price = each_div.xpath(".//*[@class='item_price js_hasprice']//a/b/text()")[0]
+                score = each_div.xpath(".//*[@class='level levelmargin']/a/strong/text()")
+                commit = each_div.xpath(".//*[@class='level levelmargin']/a/text()")[1]
+                recommand = each_div.xpath(".//*[@class='level levelmargin']/a/span/text()")
+                address = each_div.xpath(".//*[@class='area_contair']/a/span/text()")
+            except Exception as e:
+                print(e)
+            else:
+                if score == []:
+                    score = 0
+                else:
+                    score = score[0]
+
+                if address is None:  # 有的酒店地址标签在 a/span/em下
+                    address = each_div.xpath(".//*[@class='area_contair']/a/span/em/text()")[0][0]
+                else:
+                    address = address[0]
+
+                commit_num = re.search(r'\d+', str(commit))
+                if commit_num:
+                    commit_number = commit_num.group()
+                else:
+                    commit_number = 0
+
+                if recommand != []:  # 没有推荐数的酒店该标签为[]
+                    recommand = re.search(r'\d+', str(recommand[0]))
+                    if recommand:
+                        recommand = recommand.group()
+                    else:
+                        recommand = 0
+                else:
+                    recommand = 0
+
+                result = (name, address, score, recommand, commit_number, price)
+                self.rows.append(result)
         self.store_csv()
 
     def store_csv(self):
         headers = ['酒店名字', '地址', '评分', '推荐度', '点评数', '价格']
         with open("hotel.csv", 'a') as f:
-            f_csv = csv.write(f, )
+            f_csv = csv.writer(f, )
             f_csv.writerow(headers)
             f_csv.writerows(self.rows)
 
 
 if __name__ == '__main__':
     spider = Spider(url= 'https://user.qunar.com/passport/login.jsp?ret=https%3A%2F%2Fwww.qunar.com%2F',
-                    username='332976499@qq.com',
-                    password='fsm19950923',
                     toCity="广州",
                     )
     spider.start()
