@@ -22,9 +22,7 @@ import re
 
 class Spider(object):
 
-    def __init__(self, url, toCity):
-        self.url = url
-        self.toCity = toCity
+    def __init__(self):
         self.setArguments = SetArguments()
         self.log = LogHandler('spider', file=False)
 
@@ -33,7 +31,7 @@ class Spider(object):
         self.driver = webdriver.Chrome(chrome_options=self.options)
         self.driver.set_window_size(950, 500)
         self.driver.set_page_load_timeout(config.TIME_OUT)
-        self.driver.get(self.url)
+        self.driver.get(config.URL)
         self.driver.implicitly_wait(config.SUPER_WAIT)
         # self.driver.execute_script("document.body.style.zoom='0.7'") #缩放浏览器字大小
         self.driver.find_element_by_class_name(config.PORT_TOGGLER).click() #二维码登陆转为账号密码登陆
@@ -56,7 +54,7 @@ class Spider(object):
         # if self.ipAndPort:
         #     self.options.add_argument("--proxy-server=http://" + self.ipAndPort)
         #     print(self.ipAndPort, self.agent)
-            # self.log.info('user-agent %s---ipAndPort: %s' % (self.agent, self.ipAndPort))
+                self.log.info('user-agent %s---ipAndPort: %s' % (self.agent, self.ipAndPort))
 
     def usernamePasswordLogin(self):
         """
@@ -157,7 +155,7 @@ class Spider(object):
         self.ele_toCity.clear()
         self.driver.implicitly_wait(config.MID_WAIT)
         time.sleep(2)
-        self.ele_toCity.send_keys(self.toCity)
+        self.ele_toCity.send_keys(config.TO_CITY)
         time.sleep(1.5)
         self.driver.implicitly_wait(config.MID_WAIT)
         # ActionChains(self.driver).send_keys(Keys.ENTER).perform() #用于躲避输入城市的自动提示导致selenium焦点异常
@@ -230,11 +228,8 @@ class Spider(object):
 
 
 if __name__ == '__main__':
-    spider = Spider(url= 'https://user.qunar.com/passport/login.jsp?ret=https%3A%2F%2Fwww.qunar.com%2F',
-                    toCity="广州",
-                    )
+    spider = Spider()
     spider.start()
-
 
     # browser = myFox().work()
     # js = 'window.open("https://www.baidu.com")'
